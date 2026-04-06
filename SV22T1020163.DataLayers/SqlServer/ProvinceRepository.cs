@@ -4,7 +4,7 @@ using SV22T1020163.DataLayers.Interfaces;
 using SV22T1020163.Models.DataDictionary;
 using System.Data;
 
-namespace SV22T1020163.DataLayers.SqlServer
+namespace SV22T1020163.DataLayers.SQLServer
 {
     /// <summary>
     /// Cài đặt các phép xử lý dữ liệu tỉnh thành phố trên SQL Server

@@ -1,5 +1,5 @@
 using SV22T1020163.DataLayers.Interfaces;
-using SV22T1020163.DataLayers.SqlServer;
+using SV22T1020163.DataLayers.SQLServer;
 using SV22T1020163.Models.Common;
 using SV22T1020163.Models.Partner;
 

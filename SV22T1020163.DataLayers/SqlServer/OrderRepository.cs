@@ -5,7 +5,7 @@ using SV22T1020163.Models.Common;
 using SV22T1020163.Models.Sales;
 using System.Data;
 
-namespace SV22T1020163.DataLayers.SqlServer
+namespace SV22T1020163.DataLayers.SQLServer
 {
     /// <summary>
     /// Cài đặt các phép xử lý dữ liệu đơn hàng trên SQL Server

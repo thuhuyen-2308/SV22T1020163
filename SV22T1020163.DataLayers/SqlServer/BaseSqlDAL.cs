@@ -1,4 +1,4 @@
-namespace SV22T1020163.DataLayers.SqlServer
+namespace SV22T1020163.DataLayers.SQLServer
 {
     /// <summary>
     /// Lớp cơ sở cho các lớp cung cấp dữ liệu trên SQL Server
