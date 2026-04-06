@@ -1,6 +1,6 @@
 @{
     var cart = ApplicationContext.GetSessionData<List<CartItem>>("Cart") ?? new List<CartItem>();
-    int cartCount = cart.Sum(c => c.Quantity);
+    int cartCount = cart.Count;
     bool isAuthenticated = User.Identity?.IsAuthenticated == true;
     string customerName = User.Identity?.Name ?? "";
     string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";

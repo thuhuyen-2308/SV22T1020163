@@ -50,7 +50,7 @@ namespace SV22T1020163.Shop.Controllers
             SaveCart(cart);
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                return Json(new { count = cart.Sum(c => c.Quantity) });
+                return Json(new { count = cart.Count });
 
             return RedirectToAction("Index");
         }
