@@ -13,9 +13,6 @@ namespace SV22T1020163.BusinessLayers
     {
         private static readonly IOrderRepository orderDB;
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
         static SalesDataService()
         {
             orderDB = new OrderRepository(Configuration.ConnectionString);
@@ -23,17 +20,11 @@ namespace SV22T1020163.BusinessLayers
 
         #region Order
 
-        /// <summary>
-        /// Tìm kiếm và lấy danh sách đơn hàng dưới dạng phân trang
-        /// </summary>
         public static async Task<PagedResult<OrderViewInfo>> ListOrdersAsync(OrderSearchInput input)
         {
             return await orderDB.ListAsync(input);
         }
 
-        /// <summary>
-        /// Lấy thông tin chi tiết của một đơn hàng
-        /// </summary>
         public static async Task<OrderViewInfo?> GetOrderAsync(int orderID)
         {
             return await orderDB.GetAsync(orderID);
@@ -51,38 +42,42 @@ namespace SV22T1020163.BusinessLayers
         }
 
         /// <summary>
-        /// Cập nhật thông tin đơn hàng
+        /// Cập nhật thông tin đơn hàng (Chỉ cho phép khi đơn hàng mới tạo)
         /// </summary>
         public static async Task<bool> UpdateOrderAsync(Order data)
         {
-            //TODO: Kiểm tra dữ liệu và trạng thái đơn hàng trước khi cập nhật
+            var order = await orderDB.GetAsync(data.OrderID);
+            if (order == null) return false;
+
+            // Chỉ cho phép cập nhật thông tin giao hàng khi đơn hàng đang ở trạng thái Chờ duyệt
+            if (order.Status != OrderStatusEnum.New)
+                return false;
+
             return await orderDB.UpdateAsync(data);
         }
 
         /// <summary>
-        /// Xóa đơn hàng
+        /// Xóa đơn hàng (Chỉ cho phép xóa khi đơn hàng bị từ chối hoặc bị hủy)
         /// </summary>
         public static async Task<bool> DeleteOrderAsync(int orderID)
         {
-            //TODO: Kiểm tra trạng thái đơn hàng trước khi xóa
+            var order = await orderDB.GetAsync(orderID);
+            if (order == null) return false;
+
+            if (order.Status != OrderStatusEnum.Rejected && order.Status != OrderStatusEnum.Cancelled)
+                return false;
+
             return await orderDB.DeleteAsync(orderID);
         }
 
         #endregion
 
-        #region Order Status Processing
+        #region Order Status Processing (Logic giữ nguyên vì bạn đã làm tốt)
 
-        /// <summary>
-        /// Duyệt đơn hàng
-        /// </summary>
         public static async Task<bool> AcceptOrderAsync(int orderID, int employeeID)
         {
             var order = await orderDB.GetAsync(orderID);
-            if (order == null) 
-                return false;
-
-            if (order.Status != OrderStatusEnum.New)
-                return false;
+            if (order == null || order.Status != OrderStatusEnum.New) return false;
 
             order.EmployeeID = employeeID;
             order.AcceptTime = DateTime.Now;
@@ -91,78 +86,52 @@ namespace SV22T1020163.BusinessLayers
             return await orderDB.UpdateAsync(order);
         }
 
-        /// <summary>
-        /// Từ chối đơn hàng
-        /// </summary>
         public static async Task<bool> RejectOrderAsync(int orderID, int employeeID)
         {
             var order = await orderDB.GetAsync(orderID);
-            if (order == null) 
-                return false;
-
-            if (order.Status != OrderStatusEnum.New)
-                return false;
+            if (order == null || order.Status != OrderStatusEnum.New) return false;
 
             order.EmployeeID = employeeID;
             order.FinishedTime = DateTime.Now;
             order.Status = OrderStatusEnum.Rejected;
-            
+
             return await orderDB.UpdateAsync(order);
         }
 
-        /// <summary>
-        /// Hủy đơn hàng
-        /// </summary>
         public static async Task<bool> CancelOrderAsync(int orderID)
         {
             var order = await orderDB.GetAsync(orderID);
-            if (order == null) 
-                return false;
+            if (order == null) return false;
 
-            if (order.Status != OrderStatusEnum.New &&
-                order.Status != OrderStatusEnum.Accepted)
+            if (order.Status != OrderStatusEnum.New && order.Status != OrderStatusEnum.Accepted)
                 return false;
 
             order.FinishedTime = DateTime.Now;
             order.Status = OrderStatusEnum.Cancelled;
-            
+
             return await orderDB.UpdateAsync(order);
         }
 
-        /// <summary>
-        /// Giao đơn hàng cho người giao hàng
-        /// </summary>
         public static async Task<bool> ShipOrderAsync(int orderID, int shipperID)
         {
             var order = await orderDB.GetAsync(orderID);
-            if (order == null) 
-                return false;
-
-            if (order.Status != OrderStatusEnum.Accepted)
-                return false;
+            if (order == null || order.Status != OrderStatusEnum.Accepted) return false;
 
             order.ShipperID = shipperID;
             order.ShippedTime = DateTime.Now;
             order.Status = OrderStatusEnum.Shipping;
-            
+
             return await orderDB.UpdateAsync(order);
         }
 
-        /// <summary>
-        /// Hoàn tất đơn hàng
-        /// </summary>
         public static async Task<bool> CompleteOrderAsync(int orderID)
         {
             var order = await orderDB.GetAsync(orderID);
-            if (order == null) 
-                return false;
-
-            if (order.Status != OrderStatusEnum.Shipping)
-                return false;
+            if (order == null || order.Status != OrderStatusEnum.Shipping) return false;
 
             order.FinishedTime = DateTime.Now;
             order.Status = OrderStatusEnum.Completed;
-            
+
             return await orderDB.UpdateAsync(order);
         }
 
@@ -170,37 +139,41 @@ namespace SV22T1020163.BusinessLayers
 
         #region Order Detail
 
-        /// <summary>
-        /// Lấy danh sách mặt hàng của đơn hàng
-        /// </summary>
         public static async Task<List<OrderDetailViewInfo>> ListDetailsAsync(int orderID)
         {
             return await orderDB.ListDetailsAsync(orderID);
         }
 
-        /// <summary>
-        /// Lấy thông tin một mặt hàng trong đơn hàng
-        /// </summary>
         public static async Task<OrderDetailViewInfo?> GetDetailAsync(int orderID, int productID)
         {
             return await orderDB.GetDetailAsync(orderID, productID);
         }
 
         /// <summary>
-        /// Thêm mặt hàng vào đơn hàng
+        /// Thêm mặt hàng vào đơn hàng (Chỉ cho phép khi đơn hàng đang chờ duyệt hoặc đã duyệt nhưng chưa giao)
         /// </summary>
         public static async Task<bool> AddDetailAsync(OrderDetail data)
         {
-            //TODO: Kiểm tra dữ liệu và trạng thái đơn hàng trước khi thêm mặt hàng
+            var order = await orderDB.GetAsync(data.OrderID);
+            if (order == null) return false;
+
+            if (order.Status != OrderStatusEnum.New && order.Status != OrderStatusEnum.Accepted)
+                return false;
+
             return await orderDB.AddDetailAsync(data);
         }
 
         /// <summary>
-        /// Cập nhật mặt hàng trong đơn hàng
+        /// Cập nhật số lượng/giá bán của mặt hàng trong đơn hàng
         /// </summary>
         public static async Task<bool> UpdateDetailAsync(OrderDetail data)
         {
-            //TODO: Kiểm tra dữ liệu và trạng thái đơn hàng trước khi cập nhật mặt hàng
+            var order = await orderDB.GetAsync(data.OrderID);
+            if (order == null) return false;
+
+            if (order.Status != OrderStatusEnum.New && order.Status != OrderStatusEnum.Accepted)
+                return false;
+
             return await orderDB.UpdateDetailAsync(data);
         }
 
@@ -209,7 +182,12 @@ namespace SV22T1020163.BusinessLayers
         /// </summary>
         public static async Task<bool> DeleteDetailAsync(int orderID, int productID)
         {
-            //TODO: Kiểm tra trạng thái đơn hàng trước khi xóa mặt hàng
+            var order = await orderDB.GetAsync(orderID);
+            if (order == null) return false;
+
+            if (order.Status != OrderStatusEnum.New && order.Status != OrderStatusEnum.Accepted)
+                return false;
+
             return await orderDB.DeleteDetailAsync(orderID, productID);
         }
 

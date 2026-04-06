@@ -12,9 +12,6 @@ namespace SV22T1020163.BusinessLayers
     {
         private static readonly IEmployeeRepository employeeDB;
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
         static HRDataService()
         {
             employeeDB = new EmployeeRepository(Configuration.ConnectionString);
@@ -25,12 +22,6 @@ namespace SV22T1020163.BusinessLayers
         /// <summary>
         /// Tìm kiếm và lấy danh sách nhân viên dưới dạng phân trang.
         /// </summary>
-        /// <param name="input">
-        /// Thông tin tìm kiếm và phân trang (từ khóa tìm kiếm, trang cần hiển thị, số dòng mỗi trang).
-        /// </param>
-        /// <returns>
-        /// Kết quả tìm kiếm dưới dạng danh sách nhân viên có phân trang.
-        /// </returns>
         public static async Task<PagedResult<Employee>> ListEmployeesAsync(PaginationSearchInput input)
         {
             return await employeeDB.ListAsync(input);
@@ -39,10 +30,6 @@ namespace SV22T1020163.BusinessLayers
         /// <summary>
         /// Lấy thông tin chi tiết của một nhân viên dựa vào mã nhân viên.
         /// </summary>
-        /// <param name="employeeID">Mã nhân viên cần tìm.</param>
-        /// <returns>
-        /// Đối tượng Employee nếu tìm thấy, ngược lại trả về null.
-        /// </returns>
         public static async Task<Employee?> GetEmployeeAsync(int employeeID)
         {
             return await employeeDB.GetAsync(employeeID);
@@ -51,36 +38,55 @@ namespace SV22T1020163.BusinessLayers
         /// <summary>
         /// Bổ sung một nhân viên mới vào hệ thống.
         /// </summary>
-        /// <param name="data">Thông tin nhân viên cần bổ sung.</param>
-        /// <returns>Mã nhân viên được tạo mới.</returns>
         public static async Task<int> AddEmployeeAsync(Employee data)
         {
+            if (string.IsNullOrWhiteSpace(data.FullName) || string.IsNullOrWhiteSpace(data.Email))
+                throw new ArgumentException("Họ tên và Email không được để trống");
+
             if (!string.IsNullOrEmpty(data.Password))
                 data.Password = PasswordHasher.HashMd5(data.Password);
+
             return await employeeDB.AddAsync(data);
         }
 
         /// <summary>
-        /// Cập nhật thông tin của một nhân viên.
+        /// Cập nhật thông tin cơ bản của nhân viên
         /// </summary>
-        /// <param name="data">Thông tin nhân viên cần cập nhật.</param>
-        /// <returns>
-        /// True nếu cập nhật thành công, ngược lại False.
-        /// </returns>
         public static async Task<bool> UpdateEmployeeAsync(Employee data)
         {
-            //TODO: Kiểm tra dữ liệu hợp lệ
+            if (string.IsNullOrWhiteSpace(data.FullName))
+                return false;
+
             return await employeeDB.UpdateAsync(data);
+        }
+
+        /// <summary>
+        /// Cập nhật danh sách quyền của nhân viên
+        /// </summary>
+        public static async Task<bool> UpdateEmployeeRolesAsync(int employeeID, string[] roleNames)
+        {
+            var employee = await employeeDB.GetAsync(employeeID);
+            if (employee == null) return false;
+
+            // Chuyển mảng thành chuỗi cách nhau bởi dấu phẩy
+            employee.RoleNames = (roleNames != null && roleNames.Length > 0)
+                                 ? string.Join(",", roleNames)
+                                 : "";
+
+            return await employeeDB.UpdateAsync(employee);
+        }
+
+        /// <summary>
+        /// Danh sách tất cả các quyền định nghĩa trong hệ thống
+        /// </summary>
+        public static List<string> ListAllRoles()
+        {
+            return new List<string> { "admin", "employee", "sale", "shipper" };
         }
 
         /// <summary>
         /// Xóa một nhân viên dựa vào mã nhân viên.
         /// </summary>
-        /// <param name="employeeID">Mã nhân viên cần xóa.</param>
-        /// <returns>
-        /// True nếu xóa thành công, False nếu nhân viên đang được sử dụng
-        /// hoặc việc xóa không thực hiện được.
-        /// </returns>
         public static async Task<bool> DeleteEmployeeAsync(int employeeID)
         {
             if (await employeeDB.IsUsedAsync(employeeID))
@@ -92,59 +98,36 @@ namespace SV22T1020163.BusinessLayers
         /// <summary>
         /// Kiểm tra xem một nhân viên có đang được sử dụng trong dữ liệu hay không.
         /// </summary>
-        /// <param name="employeeID">Mã nhân viên cần kiểm tra.</param>
-        /// <returns>
-        /// True nếu nhân viên đang được sử dụng, ngược lại False.
-        /// </returns>
         public static async Task<bool> IsUsedEmployeeAsync(int employeeID)
         {
             return await employeeDB.IsUsedAsync(employeeID);
         }
 
         /// <summary>
-        /// Kiểm tra xem email của nhân viên có hợp lệ không
-        /// (không bị trùng với email của nhân viên khác).
+        /// Kiểm tra email trùng
         /// </summary>
-        /// <param name="email">Địa chỉ email cần kiểm tra.</param>
-        /// <param name="employeeID">
-        /// Nếu employeeID = 0: kiểm tra email đối với nhân viên mới.
-        /// Nếu employeeID khác 0: kiểm tra email của nhân viên có mã là employeeID.
-        /// </param>
-        /// <returns>
-        /// True nếu email hợp lệ (không trùng), ngược lại False.
-        /// </returns>
         public static async Task<bool> ValidateEmployeeEmailAsync(string email, int employeeID = 0)
         {
             return await employeeDB.ValidateEmailAsync(email, employeeID);
         }
+
+        /// <summary>
+        /// Đổi mật khẩu nhân viên
+        /// </summary>
         public static async Task<bool> ChangePasswordAsync(int employeeID, string newPassword)
         {
-            // Lưu ý: Password nên được Hash MD5 trước khi lưu (như bạn làm ở hàm Add)
-            // Nếu bạn có lớp PasswordHasher thì dùng ở đây
-            return await employeeDB.ChangePasswordAsync(employeeID, newPassword);
+            string hashed = string.IsNullOrEmpty(newPassword) ? "" : PasswordHasher.HashMd5(newPassword);
+            return await employeeDB.ChangePasswordAsync(employeeID, hashed);
         }
 
+        /// <summary>
+        /// Lấy danh sách quyền hiện tại của nhân viên
+        /// </summary>
         public static async Task<IList<string>> GetEmployeeRolesAsync(int employeeID)
         {
             return await employeeDB.GetRolesAsync(employeeID);
         }
 
-        public static List<string> ListAllRoles()
-        {
-            
-            return new List<string> { "admin", "employee" };
-        }
-
-        public static async Task<bool> UpdateEmployeeRolesAsync(int employeeID, string[] roleNames)
-        {
-            var employee = await employeeDB.GetAsync(employeeID);
-            if (employee == null) return false;
-
-            // Ghép mảng thành chuỗi cách nhau bởi dấu phẩy để lưu vào cột RoleNames
-            employee.RoleNames = string.Join(",", roleNames);
-
-            return await employeeDB.UpdateAsync(employee);
-        }
         #endregion
     }
 }
