@@ -1,0 +1,24 @@
+@{
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+<div class="account-sidebar-card">
+    <div class="text-center mb-3 pb-3" style="border-bottom:1px solid var(--border);">
+        <i class="bi bi-person-badge-fill fs-1 text-primary"></i>
+        <div class="fw-bold mt-1">@User.Identity?.Name</div>
+    </div>
+    <nav class="nav flex-column account-nav">
+        <a class="nav-link @(currentAction == "Profile" ? "active" : "")" asp-controller="Account" asp-action="Profile">
+            <i class="bi bi-person me-2"></i>Thông tin cá nhân
+        </a>
+        <a class="nav-link @(currentAction == "ChangePassword" ? "active" : "")" asp-controller="Account" asp-action="ChangePassword">
+            <i class="bi bi-key me-2"></i>Đổi mật khẩu
+        </a>
+        <a class="nav-link" asp-controller="Order" asp-action="History">
+            <i class="bi bi-bag-check me-2"></i>Đơn hàng của tôi
+        </a>
+        <hr class="my-2" />
+        <a class="nav-link text-danger" asp-controller="Account" asp-action="Logout">
+            <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+        </a>
+    </nav>
+</div>

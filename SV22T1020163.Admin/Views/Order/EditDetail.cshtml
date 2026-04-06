@@ -1,0 +1,63 @@
+@model SV22T1020163.Models.Sales.OrderDetailViewInfo
+@{
+    int orderID = ViewBag.OrderID;
+}
+@section PageToolBar {
+    <button type="submit" form="formEdit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Cập nhật
+    </button>
+    <a href="~/Order/Detail/@orderID" class="btn btn-secondary ms-1">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+}
+
+<div class="card card-primary card-outline">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Cập nhật chi tiết đơn hàng #@orderID</h5>
+    </div>
+    <div class="card-body">
+        <form id="formEdit" method="post" asp-action="EditDetail">
+            <input type="hidden" name="orderID" value="@orderID" />
+            <input type="hidden" name="productID" value="@Model.ProductID" />
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-sm-4 col-form-label fw-semibold">Mặt hàng</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control-plaintext fw-bold" value="@Model.ProductName" readonly>
+                        </div>
+                    </div>
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-sm-4 col-form-label fw-semibold">Đơn vị tính</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control-plaintext" value="@Model.Unit" readonly>
+                        </div>
+                    </div>
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-sm-4 col-form-label fw-semibold">Số lượng</label>
+                        <div class="col-sm-5">
+                            <input type="number" name="quantity" class="form-control text-end" min="1" value="@Model.Quantity">
+                        </div>
+                    </div>
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-sm-4 col-form-label fw-semibold">Đơn giá</label>
+                        <div class="col-sm-5">
+                            <input type="text" name="salePrice" class="form-control text-end money-input" value="@Model.SalePrice.ToString("0")">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    @if (!string.IsNullOrEmpty(Model.Photo))
+                    {
+                        <img src="~/anh_chung/products/@Model.Photo" class="img-thumbnail" style="max-height:180px">
+                    }
+                    else
+                    {
+                        <img src="~/anh_chung/products/nophoto.png" class="img-thumbnail" style="max-height:180px">
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

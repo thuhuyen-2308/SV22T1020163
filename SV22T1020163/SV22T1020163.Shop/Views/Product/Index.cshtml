@@ -1,0 +1,164 @@
+@model PagedResult<Product>
+@{
+    ViewData["Title"] = "Siêu Thị Mọi Nhà";
+    var input = ViewBag.SearchInput as ProductSearchInput;
+    var categories = ViewBag.Categories as List<Category> ?? new List<Category>();
+}
+
+<div class="container py-4 catalog-page">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Siêu Thị</li>
+        </ol>
+    </nav>
+
+    <header class="catalog-hero reveal mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3">
+            <div>
+                <h1 class="catalog-hero__title h3 fw-bold mb-1 font-serif">SmartMini</h1>
+                <p class="text-muted mb-0 small">Lọc theo danh mục, giá và từ khóa — chủ đề bạn quan tâm.</p>
+            </div>
+            <div class="catalog-hero__count text-muted small">
+                Tìm thấy <strong class="text-dark">@Model.RowCount</strong> sản phẩm
+            </div>
+        </div>
+    </header>
+
+    <form asp-controller="Product" asp-action="Index" method="get" class="catalog-filter-form mb-4">
+        <input type="hidden" name="page" value="1" />
+        <button class="btn btn-outline-primary w-100 d-lg-none mb-2 catalog-filter-toggle" type="button"
+                data-bs-toggle="collapse" data-bs-target="#catalogFilterCollapse"
+                aria-expanded="false" aria-controls="catalogFilterCollapse">
+            <i class="bi bi-sliders me-2"></i>Bộ lọc &amp; tìm kiếm
+        </button>
+        <div class="collapse d-lg-block" id="catalogFilterCollapse">
+            <div class="catalog-toolbar card border-0 shadow-sm">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <label class="form-label small fw-bold mb-1">Danh mục</label>
+                            <select name="categoryId" class="form-select form-select-sm">
+                                <option value="0">Tất cả danh mục</option>
+                                @foreach (var c in categories)
+                                {
+                                    if (input?.CategoryID == c.CategoryID)
+                                    {
+                                        <option value="@c.CategoryID" selected>@c.CategoryName</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@c.CategoryID">@c.CategoryName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <label class="form-label small fw-bold mb-1">Từ khóa</label>
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Tên sản phẩm" value="@input?.SearchValue" />
+                        </div>
+                        <div class="col-6 col-sm-4 col-xl-2">
+                            <label class="form-label small fw-bold mb-1">Giá từ</label>
+                            <input type="number" name="minPrice" class="form-control form-control-sm" placeholder="Từ"
+                                   value="@(input?.MinPrice > 0 ? input.MinPrice.ToString("0") : "")" min="0" step="1000" />
+                        </div>
+                        <div class="col-6 col-sm-4 col-xl-2">
+                            <label class="form-label small fw-bold mb-1">Đến</label>
+                            <input type="number" name="maxPrice" class="form-control form-control-sm" placeholder="Đến"
+                                   value="@(input?.MaxPrice > 0 ? input.MaxPrice.ToString("0") : "")" min="0" step="1000" />
+                        </div>
+                        <div class="col-12 col-sm-4 col-xl-auto d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm px-4">
+                                <i class="bi bi-search me-1"></i>Áp dụng
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Xóa lọc</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.DataItems.Any())
+    {
+        <div class="row g-3 reveal-stagger catalog-grid">
+            @foreach (var p in Model.DataItems)
+            {
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="product-card reveal h-100">
+                        <a asp-action="Detail" asp-route-id="@p.ProductID">
+                            <div class="card-img-wrap">
+                                <img src="@(string.IsNullOrEmpty(p.Photo) ? "/anh_chung/products/noproduct.svg" : "/anh_chung/products/" + p.Photo)"
+                                     alt="@p.ProductName" />
+                            </div>
+                        </a>
+                        <div class="card-body">
+                            <a class="product-name" asp-action="Detail" asp-route-id="@p.ProductID">@p.ProductName</a>
+                            <div class="product-price">@p.Price.ToString("N0") đ</div>
+                            <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                                <input type="hidden" name="productId" value="@p.ProductID" />
+                                <button type="submit" class="btn btn-add-cart w-100">
+                                    <i class="bi bi-cart-plus me-1"></i>Thêm vào giỏ
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.PageCount > 1)
+        {
+            <nav class="mt-4" aria-label="Phân trang">
+                <ul class="pagination justify-content-center flex-wrap">
+                    <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-page="@(Model.Page - 1)"
+                           asp-route-search="@input?.SearchValue"
+                           asp-route-categoryId="@input?.CategoryID"
+                           asp-route-minPrice="@input?.MinPrice"
+                           asp-route-maxPrice="@input?.MaxPrice">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    @foreach (var p in Model.GetDisplayPages())
+                    {
+                        if (p.IsEllipsis)
+                        {
+                            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                        }
+                        else
+                        {
+                            <li class="page-item @(p.IsCurrent ? "active" : "")">
+                                <a class="page-link" asp-action="Index"
+                                   asp-route-page="@p.Page"
+                                   asp-route-search="@input?.SearchValue"
+                                   asp-route-categoryId="@input?.CategoryID"
+                                   asp-route-minPrice="@input?.MinPrice"
+                                   asp-route-maxPrice="@input?.MaxPrice">@p.Page</a>
+                            </li>
+                        }
+                    }
+                    <li class="page-item @(Model.Page >= Model.PageCount ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-page="@(Model.Page + 1)"
+                           asp-route-search="@input?.SearchValue"
+                           asp-route-categoryId="@input?.CategoryID"
+                           asp-route-minPrice="@input?.MinPrice"
+                           asp-route-maxPrice="@input?.MaxPrice">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    }
+    else
+    {
+        <div class="empty-state text-center catalog-empty py-5">
+            <div class="empty-state-icon"><i class="bi bi-search"></i></div>
+            <p class="text-muted mb-3">Chưa thấy sản phẩm phù hợp. Thử đổi danh mục, khoảng giá hoặc từ khóa nhé.</p>
+            <a asp-action="Index" class="btn btn-primary btn-sm">Xóa bộ lọc</a>
+        </div>
+    }
+</div>

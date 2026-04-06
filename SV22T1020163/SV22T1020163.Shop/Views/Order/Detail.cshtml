@@ -1,0 +1,220 @@
+@model OrderViewInfo
+@{
+    ViewData["Title"] = $"Đơn hàng #{Model.OrderID}";
+    var details = ViewBag.Details as List<OrderDetailViewInfo> ?? new List<OrderDetailViewInfo>();
+    decimal total = details.Sum(d => d.TotalPrice);
+}
+
+@functions {
+    string GetStatusPillClass(OrderStatusEnum status)
+    {
+        return status switch
+        {
+            OrderStatusEnum.New => "order-status-pill--new",
+            OrderStatusEnum.Accepted => "order-status-pill--accepted",
+            OrderStatusEnum.Shipping => "order-status-pill--shipping",
+            OrderStatusEnum.Completed => "order-status-pill--completed",
+            OrderStatusEnum.Rejected => "order-status-pill--rejected",
+            OrderStatusEnum.Cancelled => "order-status-pill--cancelled",
+            _ => "order-status-pill--muted"
+        };
+    }
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Order" asp-action="History">Đơn hàng</a></li>
+            <li class="breadcrumb-item active">#@Model.OrderID</li>
+        </ol>
+    </nav>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <header class="order-detail-hero mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <p class="order-detail-hero__eyebrow text-muted small mb-1">Mã đơn hàng</p>
+                <h1 class="order-detail-hero__title h3 fw-bold mb-0">Đơn hàng #@Model.OrderID</h1>
+            </div>
+            <span class="order-status-pill @GetStatusPillClass(Model.Status)">@Model.Status.GetDescription()</span>
+        </div>
+    </header>
+
+    @if (Model.Status == OrderStatusEnum.Rejected)
+    {
+        <div class="order-stepper order-stepper--compact mb-4" aria-label="Tiến trình đơn hàng">
+            <div class="order-stepper__inner">
+                <div class="order-step order-step--done">
+                    <span class="order-step__icon" aria-hidden="true"><i class="bi bi-bag-check"></i></span>
+                    <span class="order-step__label">Đã đặt</span>
+                </div>
+                <div class="order-stepper__line order-stepper__line--muted" aria-hidden="true"></div>
+                <div class="order-step order-step--danger order-step--current">
+                    <span class="order-step__icon" aria-hidden="true"><i class="bi bi-x-octagon"></i></span>
+                    <span class="order-step__label">Đơn bị từ chối</span>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Model.Status == OrderStatusEnum.Cancelled)
+    {
+        <div class="order-stepper order-stepper--compact mb-4" aria-label="Tiến trình đơn hàng">
+            <div class="order-stepper__inner">
+                <div class="order-step order-step--done">
+                    <span class="order-step__icon" aria-hidden="true"><i class="bi bi-bag-check"></i></span>
+                    <span class="order-step__label">Đã đặt</span>
+                </div>
+                <div class="order-stepper__line order-stepper__line--muted" aria-hidden="true"></div>
+                <div class="order-step order-step--danger order-step--current">
+                    <span class="order-step__icon" aria-hidden="true"><i class="bi bi-slash-circle"></i></span>
+                    <span class="order-step__label">Đã hủy</span>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        var s = Model.Status;
+        var step2Done = s >= OrderStatusEnum.Accepted;
+        var step2Current = s == OrderStatusEnum.New;
+        var step3Done = s >= OrderStatusEnum.Shipping;
+        var step3Current = s == OrderStatusEnum.Shipping;
+        var step4Done = s == OrderStatusEnum.Completed;
+        var step4Current = s == OrderStatusEnum.Completed;
+        <div class="order-stepper mb-4" aria-label="Tiến trình đơn hàng">
+            <div class="order-stepper__inner">
+                <div class="order-step order-step--done">
+                    <span class="order-step__icon" aria-hidden="true"><i class="bi bi-bag-check"></i></span>
+                    <span class="order-step__label">Đã đặt</span>
+                </div>
+                <div class="order-stepper__line @(step2Done ? "order-stepper__line--done" : "order-stepper__line--muted")" aria-hidden="true"></div>
+                <div class="order-step @(step2Done && !step2Current ? "order-step--done" : "") @(step2Current ? "order-step--current" : "") @(!step2Done && !step2Current ? "order-step--upcoming" : "")">
+                    <span class="order-step__icon" aria-hidden="true"><i class="bi @(step2Done && !step2Current ? "bi-check-lg" : "bi-hourglass-split")"></i></span>
+                    <span class="order-step__label">@(s == OrderStatusEnum.New ? "Chờ duyệt" : "Đã duyệt")</span>
+                </div>
+                <div class="order-stepper__line @(step3Done && !step3Current ? "order-stepper__line--done" : (step3Current ? "order-stepper__line--done" : "order-stepper__line--muted"))" aria-hidden="true"></div>
+                <div class="order-step @(step3Done && !step3Current ? "order-step--done" : "") @(step3Current ? "order-step--current" : "") @(!step3Done && !step3Current && !step4Done ? "order-step--upcoming" : "")">
+                    <span class="order-step__icon" aria-hidden="true"><i class="bi @(step3Done && !step3Current ? "bi-check-lg" : "bi-truck")"></i></span>
+                    <span class="order-step__label">Đang giao</span>
+                </div>
+                <div class="order-stepper__line @(step4Done ? "order-stepper__line--done" : "order-stepper__line--muted")" aria-hidden="true"></div>
+                <div class="order-step @(step4Done ? "order-step--done order-step--current" : "order-step--upcoming")">
+                    <span class="order-step__icon" aria-hidden="true"><i class="bi bi-patch-check"></i></span>
+                    <span class="order-step__label">Hoàn tất</span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="detail-page-card detail-page-card--meta h-100">
+                <h2 class="detail-page-card__title h6 fw-bold mb-1"><i class="bi bi-info-circle me-2 text-primary"></i>Thông tin đơn hàng</h2>
+                <p class="text-muted small mb-3">Thời gian xử lý đơn</p>
+                <dl class="row g-3 mb-0 order-meta-list">
+                    <dt class="col-sm-4 order-meta-list__dt">Ngày đặt</dt>
+                    <dd class="col-sm-8 order-meta-list__dd">@Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</dd>
+                    @if (Model.AcceptTime.HasValue)
+                    {
+                        <dt class="col-sm-4 order-meta-list__dt">Ngày duyệt</dt>
+                        <dd class="col-sm-8 order-meta-list__dd">@Model.AcceptTime.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                    }
+                    @if (Model.ShippedTime.HasValue)
+                    {
+                        <dt class="col-sm-4 order-meta-list__dt">Ngày giao hàng</dt>
+                        <dd class="col-sm-8 order-meta-list__dd">@Model.ShippedTime.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                    }
+                    @if (Model.FinishedTime.HasValue)
+                    {
+                        <dt class="col-sm-4 order-meta-list__dt">Ngày hoàn tất</dt>
+                        <dd class="col-sm-8 order-meta-list__dd">@Model.FinishedTime.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="detail-page-card detail-page-card--meta h-100">
+                <h2 class="detail-page-card__title h6 fw-bold mb-1"><i class="bi bi-truck me-2 text-primary"></i>Thông tin giao hàng</h2>
+                <p class="text-muted small mb-3">Địa chỉ nhận hàng</p>
+                <dl class="row g-3 mb-0 order-meta-list">
+                    <dt class="col-sm-4 order-meta-list__dt">Tỉnh/Thành</dt>
+                    <dd class="col-sm-8 order-meta-list__dd">@Model.DeliveryProvince</dd>
+                    <dt class="col-sm-4 order-meta-list__dt">Địa chỉ</dt>
+                    <dd class="col-sm-8 order-meta-list__dd">@Model.DeliveryAddress</dd>
+                    @if (!string.IsNullOrEmpty(Model.ShipperName))
+                    {
+                        <dt class="col-sm-4 order-meta-list__dt">Người giao</dt>
+                        <dd class="col-sm-8 order-meta-list__dd">@Model.ShipperName <span class="text-muted">(@Model.ShipperPhone)</span></dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-page-card mb-4">
+        <h2 class="detail-page-card__title h6 fw-bold mb-3"><i class="bi bi-box-seam me-2 text-primary"></i>Sản phẩm</h2>
+        <div class="table-responsive order-items-wrap">
+            <table class="table order-items-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th class="text-end order-col-money">Đơn giá</th>
+                        <th class="text-center order-col-qty">SL</th>
+                        <th class="text-end order-col-money">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in details)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="@(string.IsNullOrEmpty(d.Photo) ? "/anh_chung/products/noproduct.svg" : "/anh_chung/products/" + d.Photo)"
+                                         class="order-line-thumb" alt="" />
+                                    <div>
+                                        <div class="fw-semibold small">@d.ProductName</div>
+                                        <div class="text-muted order-line-unit">@d.Unit</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end small text-muted order-col-money"><span class="order-price-cell">@d.SalePrice.ToString("N0") đ</span></td>
+                            <td class="text-center fw-semibold order-col-qty">@d.Quantity</td>
+                            <td class="text-end text-price fw-bold order-col-money"><span class="order-price-cell">@d.TotalPrice.ToString("N0") đ</span></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="order-items-total-row">
+                        <td colspan="3" class="text-end fw-bold align-middle">Tổng cộng</td>
+                        <td class="text-end text-price fw-bold fs-5 order-col-total align-middle"><span class="order-price-cell order-price-cell--lg">@total.ToString("N0") đ</span></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="order-detail-actions pt-4 mt-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a asp-action="History" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+            </a>
+            @if (Model.Status == OrderStatusEnum.New || Model.Status == OrderStatusEnum.Accepted)
+            {
+                <form asp-action="Cancel" asp-route-id="@Model.OrderID" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')">
+                        <i class="bi bi-x-circle me-1"></i>Hủy đơn hàng
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>

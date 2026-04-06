@@ -1,0 +1,105 @@
+@{
+    ViewData["Title"] = "Đặt hàng";
+    var customer = ViewBag.Customer as Customer;
+    var cart = ViewBag.Cart as List<CartItem> ?? new List<CartItem>();
+    decimal cartTotal = ViewBag.CartTotal ?? 0m;
+    var provinces = ViewBag.Provinces as List<SV22T1020163.Models.DataDictionary.Province> ?? new List<SV22T1020163.Models.DataDictionary.Province>();
+}
+
+<div class="container py-4 checkout-page">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Cart" asp-action="Index">Giỏ hàng</a></li>
+            <li class="breadcrumb-item active">Đặt hàng</li>
+        </ol>
+    </nav>
+
+    <div class="checkout-steps mb-4 reveal" aria-label="Các bước đặt hàng">
+        <div class="checkout-steps__inner">
+            <span class="checkout-steps__item checkout-steps__item--done"><i class="bi bi-cart3"></i> Giỏ hàng</span>
+            <span class="checkout-steps__sep"></span>
+            <span class="checkout-steps__item checkout-steps__item--current"><i class="bi bi-geo-alt"></i> Giao hàng</span>
+            <span class="checkout-steps__sep"></span>
+            <span class="checkout-steps__item checkout-steps__item--muted"><i class="bi bi-check2-circle"></i> Hoàn tất</span>
+        </div>
+    </div>
+
+    <div class="checkout-hero reveal mb-4">
+        <h1 class="h4 fw-bold mb-1"><i class="bi bi-credit-card me-2 text-primary"></i>Thanh toán &amp; giao hàng</h1>
+        <p class="text-muted mb-0 small">Xác nhận địa chỉ — sách đóng gói chống ẩm, chống gập; giao theo lịch hẹn.</p>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <form method="post" asp-action="Checkout">
+        <div class="row g-4">
+            <!-- Delivery Info -->
+            <div class="col-lg-7">
+                <div class="checkout-card">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-truck me-2"></i>Thông tin giao hàng</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Khách hàng</label>
+                        <input type="text" class="form-control" value="@customer?.CustomerName" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tỉnh / Thành phố <span class="text-danger">*</span></label>
+                        <select name="deliveryProvince" class="form-select" required>
+                            <option value="">-- Chọn tỉnh/thành --</option>
+                            @foreach (var p in provinces)
+                            {
+                                if (p.ProvinceName == customer?.Province)
+                                {
+                                    <option value="@p.ProvinceName" selected>@p.ProvinceName</option>
+                                }
+                                else
+                                {
+                                    <option value="@p.ProvinceName">@p.ProvinceName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Địa chỉ giao hàng <span class="text-danger">*</span></label>
+                        <textarea name="deliveryAddress" class="form-control" rows="2" required>@customer?.Address</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                        <input type="text" name="deliveryPhone" class="form-control" value="@customer?.Phone" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-5">
+                <div class="checkout-card checkout-summary-sticky">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-receipt me-2"></i>Đơn hàng (@cart.Count sản phẩm)</h5>
+                    @foreach (var item in cart)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom:1px solid #f1f5f9;">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="@(string.IsNullOrEmpty(item.Photo) ? "/anh_chung/products/noproduct.svg" : "/anh_chung/products/" + item.Photo)"
+                                     style="width:40px;height:40px;object-fit:contain;border-radius:4px;" />
+                                <div>
+                                    <div class="small fw-bold">@item.ProductName</div>
+                                    <div class="small text-muted">x@item.Quantity</div>
+                                </div>
+                            </div>
+                            <div class="text-price small">@item.TotalPrice.ToString("N0") đ</div>
+                        </div>
+                    }
+                    <div class="cart-total-bar d-flex justify-content-between align-items-center mt-3">
+                        <strong class="fs-6">Tổng cộng</strong>
+                        <strong class="text-price fs-4">@cartTotal.ToString("N0") đ</strong>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-3 py-2 fw-bold">
+                        <i class="bi bi-check-circle me-2"></i>Xác nhận đặt hàng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
