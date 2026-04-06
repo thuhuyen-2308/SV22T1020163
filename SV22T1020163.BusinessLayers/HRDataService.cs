@@ -117,7 +117,34 @@ namespace SV22T1020163.BusinessLayers
         {
             return await employeeDB.ValidateEmailAsync(email, employeeID);
         }
+        public static async Task<bool> ChangePasswordAsync(int employeeID, string newPassword)
+        {
+            // Lưu ý: Password nên được Hash MD5 trước khi lưu (như bạn làm ở hàm Add)
+            // Nếu bạn có lớp PasswordHasher thì dùng ở đây
+            return await employeeDB.ChangePasswordAsync(employeeID, newPassword);
+        }
 
+        public static async Task<IList<string>> GetEmployeeRolesAsync(int employeeID)
+        {
+            return await employeeDB.GetRolesAsync(employeeID);
+        }
+
+        public static List<string> ListAllRoles()
+        {
+            
+            return new List<string> { "admin", "employee" };
+        }
+
+        public static async Task<bool> UpdateEmployeeRolesAsync(int employeeID, string[] roleNames)
+        {
+            var employee = await employeeDB.GetAsync(employeeID);
+            if (employee == null) return false;
+
+            // Ghép mảng thành chuỗi cách nhau bởi dấu phẩy để lưu vào cột RoleNames
+            employee.RoleNames = string.Join(",", roleNames);
+
+            return await employeeDB.UpdateAsync(employee);
+        }
         #endregion
     }
 }

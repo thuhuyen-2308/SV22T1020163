@@ -155,7 +155,8 @@ namespace SV22T1020163.DataLayers.SQLServer
                                 Phone = @Phone, 
                                 Email = @Email, 
                                 Photo = @Photo, 
-                                IsWorking = @IsWorking
+                               IsWorking = @IsWorking,
+                                RoleNames = @RoleNames
                             WHERE EmployeeID = @EmployeeID";
                 var parameters = new
                 {
@@ -165,6 +166,7 @@ namespace SV22T1020163.DataLayers.SQLServer
                     data.Phone,
                     data.Email,
                     data.Photo,
+                    data.RoleNames,
                     data.IsWorking,
                     data.EmployeeID
                 };
@@ -187,6 +189,49 @@ namespace SV22T1020163.DataLayers.SQLServer
                 var parameters = new { Email = email, EmployeeID = id };
                 var result = await connection.ExecuteScalarAsync<int>(sql, parameters);
                 return result == 0;
+            }
+        }
+        public async Task<bool> ChangePasswordAsync(int employeeID, string password)
+        {
+            using (var connection = GetConnection())
+            {
+                var sql = @"UPDATE Employees 
+                    SET Password = @Password 
+                    WHERE EmployeeID = @EmployeeID";
+                var parameters = new { EmployeeID = employeeID, Password = password };
+                int rowsAffected = await connection.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+        }
+
+        public async Task<bool> UpdateRolesAsync(int employeeID, string[] roleNames)
+        {
+            using (var connection = GetConnection())
+            {
+                // 1. Xóa hết các quyền cũ của nhân viên này trong bảng EmployeeRoles
+                var sqlDelete = "DELETE FROM EmployeeRoles WHERE EmployeeID = @EmployeeID";
+                await connection.ExecuteAsync(sqlDelete, new { EmployeeID = employeeID });
+
+                // 2. Thêm lại các quyền mới từ mảng roleNames
+                if (roleNames != null && roleNames.Length > 0)
+                {
+                    var sqlInsert = "INSERT INTO EmployeeRoles(EmployeeID, RoleName) VALUES(@EmployeeID, @RoleName)";
+                    foreach (var role in roleNames)
+                    {
+                        await connection.ExecuteAsync(sqlInsert, new { EmployeeID = employeeID, RoleName = role });
+                    }
+                }
+                return true;
+            }
+        }
+
+        public async Task<IList<string>> GetRolesAsync(int employeeID)
+        {
+            using (var connection = GetConnection())
+            {
+                var sql = "SELECT RoleName FROM EmployeeRoles WHERE EmployeeID = @EmployeeID";
+                var result = await connection.QueryAsync<string>(sql, new { EmployeeID = employeeID });
+                return result.ToList();
             }
         }
     }

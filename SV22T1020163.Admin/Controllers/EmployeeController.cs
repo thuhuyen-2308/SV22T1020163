@@ -169,34 +169,80 @@ namespace SV22T1020163.Admin.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Delete(int id, string confirm)
+        public async Task<IActionResult> Delete(int id, string confirm = "")
         {
-            if (!string.IsNullOrEmpty(confirm))
-                await HRDataService.DeleteEmployeeAsync(id);
+            // Kiểm tra xem nhân viên có đang được sử dụng ở bảng khác không trước khi xóa
+            bool isUsed = await HRDataService.IsUsedEmployeeAsync(id);
+            if (isUsed)
+            {
+                TempData["Error"] = "Không thể xóa nhân viên này vì đang có dữ liệu liên quan (đơn hàng, v.v...)";
+                return RedirectToAction("Delete", new { id = id });
+            }
+
+            await HRDataService.DeleteEmployeeAsync(id);
             return RedirectToAction("Index");
         }
 
         [HttpGet]
-        public IActionResult ChangePassword(int id)
+        public async Task<IActionResult> ChangePassword(int id)
         {
-            return View();
+            var employee = await HRDataService.GetEmployeeAsync(id);
+            if (employee == null) return RedirectToAction("Index");
+            return View(employee);
         }
 
         [HttpPost]
-        public IActionResult ChangePassword(int id, string newPassword, string confirmPassword)
+        public async Task<IActionResult> ChangePassword(int id, string newPassword, string confirmPassword)
         {
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                ModelState.AddModelError("newPassword", "Vui lòng nhập mật khẩu mới");
+            }
+            if (newPassword != confirmPassword)
+            {
+                ModelState.AddModelError("confirmPassword", "Xác nhận mật khẩu không khớp");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var employee = await HRDataService.GetEmployeeAsync(id);
+                return View(employee);
+            }
+
+            // Giả sử bạn có hàm ChangePasswordAsync trong HRDataService hoặc SecurityService
+            // Nếu chưa có, bạn cần tạo nó trong BusinessLayer
+            await HRDataService.ChangePasswordAsync(id, newPassword);
+
+            TempData["Message"] = "Đổi mật khẩu thành công";
             return RedirectToAction("Index");
         }
 
         [HttpGet]
-        public IActionResult ChangeRole(int id)
+        public async Task<IActionResult> ChangeRole(int id)
         {
-            return View();
+            var employee = await HRDataService.GetEmployeeAsync(id);
+            if (employee == null) return RedirectToAction("Index");
+
+            // Danh sách tất cả các quyền để hiện checkbox
+            ViewBag.AllRoles = HRDataService.ListAllRoles();
+
+            // Chuyển chuỗi "admin,employee" từ DB thành danh sách để so sánh trong View
+            ViewBag.CurrentRoles = (employee.RoleNames ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            return View(employee);
         }
 
         [HttpPost]
-        public IActionResult ChangeRole(int id, string[] roles)
+        public async Task<IActionResult> ChangeRole(int id, string[] roleNames)
         {
+            if (roleNames == null || roleNames.Length == 0)
+            {
+                TempData["Error"] = "Vui lòng chọn ít nhất một quyền";
+                return RedirectToAction("ChangeRole", new { id = id });
+            }
+
+            await HRDataService.UpdateEmployeeRolesAsync(id, roleNames);
+            TempData["Message"] = "Cập nhật quyền thành công";
             return RedirectToAction("Index");
         }
     }

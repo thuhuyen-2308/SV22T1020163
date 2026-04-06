@@ -2,56 +2,66 @@
     ViewBag.Title = "Xóa nhân viên";
 }
 @section PageToolBar {
+    @* Nút này sẽ kích hoạt form id="formDelete" *@
     <button type="submit" form="formDelete" class="btn btn-danger">
-        <i class="bi bi-trash"></i> Xóa
+        <i class="bi bi-trash"></i> Xác nhận xóa
     </button>
-    <a href="/Employee" class="btn btn-secondary ms-1">
+    <a href="~/Employee" class="btn btn-secondary ms-1">
         <i class="bi bi-arrow-left"></i> Quay lại
     </a>
 }
 
-<div class="card card-danger">
+<div class="card card-danger card-outline">
     <div class="card-header">
-        <h3 class="card-title">
-            <i class="bi bi-person-x"></i> Xác nhận xóa nhân viên
+        <h3 class="card-title text-danger">
+            <i class="bi bi-person-x me-2"></i> Xác nhận xóa nhân viên
         </h3>
     </div>
 
     <div class="card-body">
-        <form id="formDelete" method="post">
+        @* Action trỏ về hàm Delete trong Controller *@
+        <form id="formDelete" action="~/Employee/Delete/@Model.EmployeeID" method="post">
+            @* Quan trọng: Input hidden để gửi ID về server *@
+            <input type="hidden" name="id" value="@Model.EmployeeID" />
+
             <div class="alert alert-warning">
-                <i class="bi bi-exclamation-triangle"></i>
-                Bạn có chắc chắn muốn xóa nhân viên này không?
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Cảnh báo!</strong> Bạn có chắc chắn muốn xóa nhân viên này không? Hành động này không thể hoàn tác.
             </div>
 
             <div class="row">
-                <div class="col-md-2 text-start">
-                    <img src="~/anh_chung/employees/nophoto.png"
+                <div class="col-md-2 text-center">
+                    @* Đổ ảnh nhân viên thật *@
+                    <img src="~/anh_chung/employees/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)"
                          class="img-thumbnail mb-2"
-                         style="width: 100%;"
+                         style="width: 150px; height: 150px; object-fit: cover;"
                          alt="Ảnh nhân viên" />
                 </div>
 
                 <div class="col-md-10">
                     <dl class="row">
                         <dt class="col-sm-3">Họ và tên:</dt>
-                        <dd class="col-sm-9">Nguyễn Văn A</dd>
+                        <dd class="col-sm-9">@Model.FullName</dd>
 
                         <dt class="col-sm-3">Ngày sinh:</dt>
-                        <dd class="col-sm-9">01/01/1990</dd>
+                        <dd class="col-sm-9">@Model.BirthDate.ToString("dd/MM/yyyy")</dd>
 
                         <dt class="col-sm-3">Điện thoại:</dt>
-                        <dd class="col-sm-9">0901234567</dd>
+                        <dd class="col-sm-9">@Model.Phone</dd>
 
                         <dt class="col-sm-3">Email:</dt>
-                        <dd class="col-sm-9">vana@example.com</dd>
+                        <dd class="col-sm-9">@Model.Email</dd>
 
                         <dt class="col-sm-3">Địa chỉ:</dt>
-                        <dd class="col-sm-9">Huế</dd>
+                        <dd class="col-sm-9">@Model.Address</dd>
 
                         <dt class="col-sm-3">Trạng thái:</dt>
                         <dd class="col-sm-9">
-                            <span class="badge bg-success">Đang làm việc</span>
+                            @if (Model.IsWorking) {
+                                <span class="badge bg-success">Đang làm việc</span>
+                            } else {
+                                <span class="badge bg-secondary">Đã nghỉ việc</span>
+                            }
                         </dd>
                     </dl>
                 </div>

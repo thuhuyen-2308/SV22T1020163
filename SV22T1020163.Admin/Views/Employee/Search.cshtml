@@ -52,6 +52,13 @@
                             <a href="~/Employee/Delete/@item.EmployeeID" class="btn btn-sm btn-danger">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            <a href="~/Employee/ChangeRole/@item.EmployeeID" class="btn btn-sm btn-info" title="Phân quyền">
+                                <i class="bi bi-shield-lock"></i>
+                            </a>
+
+                            <a href="~/Employee/ChangePassword/@item.EmployeeID" class="btn btn-sm btn-warning" title="Đổi mật khẩu">
+                                <i class="bi bi-key"></i>
+                            </a>
                         </td>
                     </tr>
                 }
