@@ -81,7 +81,7 @@ namespace SV22T1020163.BusinessLayers
         /// </summary>
         public static List<string> ListAllRoles()
         {
-            return new List<string> { "admin", "employee", "sale", "shipper" };
+            return new List<string> { "admin", "employee" };
         }
 
         /// <summary>
