@@ -82,17 +82,31 @@ namespace SV22T1020163.Admin.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Employee data, IFormFile? uploadPhoto)
+        public async Task<IActionResult> Create(Employee data)
         {
-            if (uploadPhoto != null)
+            // 1. Kiểm tra dữ liệu ngay tại Controller
+            if (string.IsNullOrWhiteSpace(data.FullName))
+                ModelState.AddModelError(nameof(data.FullName), "Họ tên không được để trống");
+
+            if (string.IsNullOrWhiteSpace(data.Email))
+                ModelState.AddModelError(nameof(data.Email), "Email không được để trống");
+
+            // 2. Nếu có lỗi thì trả về View luôn, không chạy xuống phần lưu nữa
+            if (!ModelState.IsValid)
             {
-                string? fileName = await SaveUploadedPhotoAsync(uploadPhoto);
-                if (fileName != null)
-                    data.Photo = fileName;
+                return View("Edit", data); // Trả về form để người dùng sửa
             }
 
-            await HRDataService.AddEmployeeAsync(data);
-            return RedirectToAction("Index");
+            try
+            {
+                await HRDataService.AddEmployeeAsync(data);
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View("Edit", data);
+            }
         }
 
         [HttpGet]

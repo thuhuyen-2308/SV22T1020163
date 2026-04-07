@@ -2,6 +2,7 @@
 @{
     var isCreate = (Model.EmployeeID == 0);
 }
+
 @section PageToolBar {
     <button type="submit" form="formEdit" class="btn btn-primary">
         <i class="bi bi-save"></i>
@@ -24,84 +25,51 @@
             </div>
 
             <div class="card-body">
-                <form id="formEdit" method="post"
-                      asp-action="@(isCreate ? "Create" : "Edit")"
-                      enctype="multipart/form-data">
+                <form id="formEdit" method="post" action="@(isCreate ? Url.Action("Create", "Employee") : Url.Action("Edit", "Employee"))">
 
                     <input type="hidden" name="EmployeeID" value="@Model.EmployeeID" />
+                    @* Giữ lại ảnh cũ để không bị null trong DB *@
+                    <input type="hidden" name="Photo" value="@Model.Photo" />
+
+                    @* Hiển thị tổng hợp các lỗi ở đầu Form (nếu có) *@
+                    <div class="mb-3">
+                        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                    </div>
 
                     <div class="row mb-3">
                         <label class="col-sm-3 col-form-label">Họ và tên</label>
                         <div class="col-sm-5">
-                            <input type="text"
-                                   name="FullName"
-                                   class="form-control"
-                                   value="@Model.FullName"
-                                   placeholder="Nhập họ và tên" autofocus />
+                            <input type="text" name="FullName" class="form-control"
+                                   value="@Model.FullName" placeholder="Nhập họ và tên" autofocus />
+                            @Html.ValidationMessage(nameof(Model.FullName), "", new { @class = "text-danger" })
                         </div>
                         <label class="col-sm-2 col-form-label text-end">Ngày sinh</label>
                         <div class="col-sm-2">
-                            <input type="text"
-                                   name="BirthDate"
-                                   class="form-control date-picker"
+                            <input type="text" name="BirthDate" class="form-control date-picker"
                                    value="@(Model.BirthDate?.ToString("dd/MM/yyyy"))" />
+                            @Html.ValidationMessage(nameof(Model.BirthDate), "", new { @class = "text-danger" })
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <label class="col-sm-3 col-form-label">Địa chỉ</label>
                         <div class="col-sm-9">
-                            <textarea name="Address"
-                                      class="form-control"
-                                      rows="3"
+                            <textarea name="Address" class="form-control" rows="3"
                                       placeholder="Nhập địa chỉ">@Model.Address</textarea>
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <label class="col-sm-3 col-form-label">Điện thoại</label>
-                        <div class="col-sm-2">
-                            <input type="tel"
-                                   name="Phone"
-                                   class="form-control"
-                                   value="@Model.Phone"
-                                   placeholder="Nhập số điện thoại" />
+                        <div class="col-sm-3">
+                            <input type="tel" name="Phone" class="form-control"
+                                   value="@Model.Phone" placeholder="Nhập số điện thoại" />
                         </div>
                         <label class="col-sm-1 col-form-label text-end">Email</label>
-                        <div class="col-sm-6">
-                            <input type="email"
-                                   name="Email"
-                                   class="form-control"
-                                   value="@Model.Email"
-                                   placeholder="Nhập email" />
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Ảnh</label>
-                        <div class="col-sm-9">
-                            <input type="file"
-                                   name="uploadPhoto"
-                                   class="form-control"
-                                   accept="image/*"
-                                   data-img-preview="imgPreview"
-                                   onchange="previewImage(this)" />
-                            <div class="mt-2">
-                                @if (!string.IsNullOrEmpty(Model.Photo))
-                                {
-                                    <img id="imgPreview"
-                                         src="~/anh_chung/employees/@Model.Photo"
-                                         class="img-thumbnail"
-                                         style="max-height: 150px;" />
-                                }
-                                else
-                                {
-                                    <img id="imgPreview"
-                                         src="~/anh_chung/employees/nophoto.png"
-                                         class="img-thumbnail"
-                                         style="max-height: 150px;" />
-                                }
-                            </div>
+                        <div class="col-sm-5">
+                            <input type="email" name="Email" class="form-control"
+                                   value="@Model.Email" placeholder="Nhập email" />
+                            @Html.ValidationMessage(nameof(Model.Email), "", new { @class = "text-danger" })
                         </div>
                     </div>
 
@@ -109,19 +77,15 @@
                         <label class="col-sm-3 col-form-label">Trạng thái</label>
                         <div class="col-sm-9">
                             <div class="form-check form-switch mt-2">
-                                <input class="form-check-input"
-                                       type="checkbox"
-                                       name="IsWorking"
-                                       id="IsWorking"
-                                       value="true"
-                                       @(Model.IsWorking == true ? "checked" : "") />
+                                <input class="form-check-input" type="checkbox"
+                                       name="IsWorking" id="IsWorking" value="true"
+                                @(Model.IsWorking == true ? "checked" : "") />
                                 <label class="form-check-label" for="IsWorking">
                                     Đang làm việc
                                 </label>
                             </div>
                         </div>
                     </div>
-
                 </form>
             </div>
         </div>
