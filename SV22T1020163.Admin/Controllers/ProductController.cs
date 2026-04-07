@@ -7,15 +7,11 @@ using SV22T1020163.BusinessLayers;
 
 namespace SV22T1020163.Admin.Controllers
 {
-    /// <summary>
-    /// Sale: chỉ xem danh sách/chi tiết mặt hàng. Admin + Manager: CRUD đầy đủ (lập đơn dùng tìm sản phẩm qua Order/SearchProducts).
-    /// </summary>
     [Authorize]
     public class ProductController : Controller
     {
         private const int PAGE_SIZE = 12;
         private const string PRODUCT_SEARCH_CONDITION = "ProductSearchCondition";
-
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _configuration;
 
@@ -27,44 +23,28 @@ namespace SV22T1020163.Admin.Controllers
 
         private async Task<string?> SaveUploadedPhotoAsync(IFormFile? file, string subfolder)
         {
-            if (file == null || file.Length == 0)
-                return null;
-
-            if (subfolder != "products")
-                subfolder = "products";
-
+            if (file == null || file.Length == 0) return null;
             string folder = Path.Combine(MediaPaths.ResolveRoot(_env, _configuration), subfolder);
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
-
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
             string fileName = $"{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
             string filePath = Path.Combine(folder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
+            using (var stream = new FileStream(filePath, FileMode.Create)) { await file.CopyToAsync(stream); }
             return fileName;
         }
 
         [Authorize(Roles = AppRoles.AllStaff)]
         public async Task<IActionResult> Index()
         {
-            var input = ApplicationContext.GetSessionData<ProductSearchInput>(PRODUCT_SEARCH_CONDITION);
-            if (input == null)
+            var input = ApplicationContext.GetSessionData<ProductSearchInput>(PRODUCT_SEARCH_CONDITION) ?? new ProductSearchInput
             {
-                input = new ProductSearchInput()
-                {
-                    Page = 1,
-                    PageSize = PAGE_SIZE,
-                    SearchValue = "",
-                    CategoryID = 0,
-                    SupplierID = 0,
-                    MinPrice = 0,
-                    MaxPrice = 0
-                };
-            }
+                Page = 1,
+                PageSize = PAGE_SIZE,
+                SearchValue = "",
+                CategoryID = 0,
+                SupplierID = 0,
+                MinPrice = 0,
+                MaxPrice = 0
+            };
             ViewBag.Categories = await CatalogDataService.ListCategoriesAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
             ViewBag.Suppliers = await PartnerDataService.ListSuppliersAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
             return View(input);
@@ -80,25 +60,12 @@ namespace SV22T1020163.Admin.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = AppRoles.AllStaff)]
-        public async Task<IActionResult> Detail(int id)
-        {
-            var product = await CatalogDataService.GetProductAsync(id);
-            if (product == null)
-                return RedirectToAction("Index");
-            ViewBag.Photos = await CatalogDataService.ListPhotosAsync(id);
-            ViewBag.Attributes = await CatalogDataService.ListAttributesAsync(id);
-            return View(product);
-        }
-
-        [HttpGet]
         [Authorize(Roles = AppRoles.AdminManager)]
         public async Task<IActionResult> Create()
         {
             ViewBag.Categories = await CatalogDataService.ListCategoriesAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
             ViewBag.Suppliers = await PartnerDataService.ListSuppliersAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
-
-            var product = new Product { IsSelling = true };
+            var product = new Product { ProductID = 0, IsSelling = true, Photo = "nophoto.png" };
             return View("Edit", product);
         }
 
@@ -106,18 +73,22 @@ namespace SV22T1020163.Admin.Controllers
         [Authorize(Roles = AppRoles.AdminManager)]
         public async Task<IActionResult> Create(Product data, IFormFile? uploadPhoto)
         {
-            if (uploadPhoto != null)
+            // Kiểm tra tính hợp lệ của dữ liệu (Tránh lỗi ArgumentException như trong ảnh 1)
+            if (string.IsNullOrWhiteSpace(data.ProductName)) ModelState.AddModelError(nameof(data.ProductName), "Tên mặt hàng không được để trống");
+            if (data.CategoryID <= 0) ModelState.AddModelError(nameof(data.CategoryID), "Vui lòng chọn loại hàng");
+            if (data.SupplierID <= 0) ModelState.AddModelError(nameof(data.SupplierID), "Vui lòng chọn nhà cung cấp");
+
+            if (!ModelState.IsValid)
             {
-                string? fileName = await SaveUploadedPhotoAsync(uploadPhoto, "products");
-                if (fileName != null)
-                    data.Photo = fileName;
+                // Sửa lỗi FETCH clause bằng cách không để PageSize = -1 (Ảnh 2)
+                ViewBag.Categories = await CatalogDataService.ListCategoriesAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
+                ViewBag.Suppliers = await PartnerDataService.ListSuppliersAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
+                return View("Edit", data);
             }
 
+            if (uploadPhoto != null) data.Photo = await SaveUploadedPhotoAsync(uploadPhoto, "products");
             int productId = await CatalogDataService.AddProductAsync(data);
-            if (productId > 0)
-                return RedirectToAction("Edit", new { id = productId });
-
-            return RedirectToAction("Index");
+            return RedirectToAction("Edit", new { id = productId });
         }
 
         [HttpGet]
@@ -125,15 +96,13 @@ namespace SV22T1020163.Admin.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var product = await CatalogDataService.GetProductAsync(id);
-            if (product == null)
-                return RedirectToAction("Index");
+            if (product == null) return RedirectToAction("Index");
 
             ViewBag.ProductID = id;
             ViewBag.Categories = await CatalogDataService.ListCategoriesAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
             ViewBag.Suppliers = await PartnerDataService.ListSuppliersAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
             ViewBag.Photos = await CatalogDataService.ListPhotosAsync(id);
             ViewBag.Attributes = await CatalogDataService.ListAttributesAsync(id);
-
             return View(product);
         }
 
@@ -141,63 +110,77 @@ namespace SV22T1020163.Admin.Controllers
         [Authorize(Roles = AppRoles.AdminManager)]
         public async Task<IActionResult> Edit(Product data, IFormFile? uploadPhoto)
         {
-            if (uploadPhoto != null)
+            if (!ModelState.IsValid)
             {
-                string? fileName = await SaveUploadedPhotoAsync(uploadPhoto, "products");
-                if (fileName != null)
-                    data.Photo = fileName;
-            }
-            else
-            {
-                var existing = await CatalogDataService.GetProductAsync(data.ProductID);
-                if (existing != null)
-                    data.Photo = existing.Photo;
+                ViewBag.Categories = await CatalogDataService.ListCategoriesAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
+                ViewBag.Suppliers = await PartnerDataService.ListSuppliersAsync(new PaginationSearchInput { Page = 1, PageSize = 1000 });
+                return View(data);
             }
 
+            if (uploadPhoto != null) data.Photo = await SaveUploadedPhotoAsync(uploadPhoto, "products");
             await CatalogDataService.UpdateProductAsync(data);
+            return RedirectToAction("Index");
+        }
+
+        // --- QUẢN LÝ ẢNH (PHOTOS) ---
+        [HttpGet]
+        [Authorize(Roles = AppRoles.AdminManager)]
+        public IActionResult CreatePhoto(int id)
+        {
+            var photo = new ProductPhoto { ProductID = id, DisplayOrder = 1 };
+            return View("EditPhoto", photo);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = AppRoles.AdminManager)]
+        public async Task<IActionResult> CreatePhoto(ProductPhoto data, IFormFile? PhotoFile)
+        {
+            // Tránh lỗi FOREIGN KEY (Ảnh 3, 5) và lỗi NULL Description (Ảnh 4)
+            if (string.IsNullOrWhiteSpace(data.Description)) ModelState.AddModelError(nameof(data.Description), "Vui lòng nhập mô tả ảnh");
+            if (PhotoFile == null) ModelState.AddModelError(nameof(data.Photo), "Vui lòng chọn ảnh");
+
+            if (!ModelState.IsValid) return View("EditPhoto", data);
+
+            data.Photo = await SaveUploadedPhotoAsync(PhotoFile, "products") ?? "";
+            await CatalogDataService.AddPhotoAsync(data);
             return RedirectToAction("Edit", new { id = data.ProductID });
         }
 
         [HttpGet]
         [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> EditPhoto(int id, long photoId)
         {
-            var product = await CatalogDataService.GetProductAsync(id);
-            if (product == null)
-                return RedirectToAction("Index");
-
-            ViewBag.IsUsed = await CatalogDataService.IsUsedProductAsync(id);
-            return View(product);
+            var photo = await CatalogDataService.GetPhotoAsync(photoId);
+            if (photo == null) return RedirectToAction("Edit", new { id });
+            return View(photo);
         }
 
         [HttpPost]
         [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> Delete(int id, string confirm)
+        public async Task<IActionResult> EditPhoto(ProductPhoto data, IFormFile? PhotoFile)
         {
-            if (!string.IsNullOrEmpty(confirm))
-                await CatalogDataService.DeleteProductAsync(id);
-            return RedirectToAction("Index");
+            if (string.IsNullOrWhiteSpace(data.Description)) ModelState.AddModelError(nameof(data.Description), "Vui lòng nhập mô tả ảnh");
+            if (!ModelState.IsValid) return View(data);
+
+            if (PhotoFile != null) data.Photo = await SaveUploadedPhotoAsync(PhotoFile, "products") ?? data.Photo;
+            await CatalogDataService.UpdatePhotoAsync(data);
+            return RedirectToAction("Edit", new { id = data.ProductID });
         }
 
-        // Attributes
-        [HttpGet]
+        [HttpPost] // Lưu ý dùng Post cho xóa để bảo mật
         [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> ListAttributes(int id)
+        public async Task<IActionResult> DeletePhoto(int id, long photoId)
         {
-            var attributes = await CatalogDataService.ListAttributesAsync(id);
-            ViewBag.ProductID = id;
-            return View(attributes);
+            await CatalogDataService.DeletePhotoAsync(photoId);
+            return RedirectToAction("Edit", new { id });
         }
 
+        // --- QUẢN LÝ THUỘC TÍNH (ATTRIBUTES) ---
         [HttpGet]
         [Authorize(Roles = AppRoles.AdminManager)]
         public IActionResult CreateAttribute(int id)
         {
-            if (id <= 0)
-                return RedirectToAction("Index");
-
             var attr = new ProductAttribute { ProductID = id, DisplayOrder = 1 };
-            ViewBag.ProductID = id;
             return View("EditAttribute", attr);
         }
 
@@ -205,8 +188,9 @@ namespace SV22T1020163.Admin.Controllers
         [Authorize(Roles = AppRoles.AdminManager)]
         public async Task<IActionResult> CreateAttribute(ProductAttribute data)
         {
-            if (data.ProductID <= 0)
-                return RedirectToAction("Index");
+            if (string.IsNullOrWhiteSpace(data.AttributeName)) ModelState.AddModelError(nameof(data.AttributeName), "Tên thuộc tính không được để trống");
+            if (string.IsNullOrWhiteSpace(data.AttributeValue)) ModelState.AddModelError(nameof(data.AttributeValue), "Giá trị không được để trống");
+            if (!ModelState.IsValid) return View("EditAttribute", data);
 
             await CatalogDataService.AddAttributeAsync(data);
             return RedirectToAction("Edit", new { id = data.ProductID });
@@ -217,9 +201,7 @@ namespace SV22T1020163.Admin.Controllers
         public async Task<IActionResult> EditAttribute(int id, long attributeId)
         {
             var attr = await CatalogDataService.GetAttributeAsync(attributeId);
-            if (attr == null)
-                return RedirectToAction("Edit", new { id });
-            ViewBag.ProductID = id;
+            if (attr == null) return RedirectToAction("Edit", new { id });
             return View(attr);
         }
 
@@ -227,123 +209,39 @@ namespace SV22T1020163.Admin.Controllers
         [Authorize(Roles = AppRoles.AdminManager)]
         public async Task<IActionResult> EditAttribute(ProductAttribute data)
         {
+            if (!ModelState.IsValid) return View(data);
             await CatalogDataService.UpdateAttributeAsync(data);
             return RedirectToAction("Edit", new { id = data.ProductID });
         }
 
-        [HttpGet]
-        [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> DeleteAttribute(int id, long attributeId)
-        {
-            var attr = await CatalogDataService.GetAttributeAsync(attributeId);
-            if (attr == null)
-                return RedirectToAction("Edit", new { id });
-            ViewBag.ProductID = id;
-            return View(attr);
-        }
-
+        // Đảm bảo dùng [HttpPost] vì Form của bạn gửi Post
         [HttpPost]
         [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> DeleteAttribute(int id, long attributeId, string confirm)
+        public async Task<IActionResult> DeleteAttribute(int id, long attributeId, string confirm = "")
         {
+            // Chỉ thực hiện xóa nếu người dùng đã xác nhận (confirm có giá trị)
             if (!string.IsNullOrEmpty(confirm))
-                await CatalogDataService.DeleteAttributeAsync(attributeId);
-            return RedirectToAction("Edit", new { id });
-        }
-
-        // Photos
-        [HttpGet]
-        [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> ListPhotos(int id)
-        {
-            var photos = await CatalogDataService.ListPhotosAsync(id);
-            ViewBag.ProductID = id;
-            return View(photos);
-        }
-
-        [HttpGet]
-        [Authorize(Roles = AppRoles.AdminManager)]
-        public IActionResult CreatePhoto(int id)
-        {
-            if (id <= 0)
-                return RedirectToAction("Index");
-
-            var photo = new ProductPhoto { ProductID = id, DisplayOrder = 1 };
-            ViewBag.ProductID = id;
-            return View("EditPhoto", photo);
-        }
-
-        [HttpPost]
-        [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> CreatePhoto(int id, IFormFile? Photo, string? Description, int DisplayOrder, bool IsHidden)
-        {
-            if (id <= 0)
-                return RedirectToAction("Index");
-
-            string? fileName = await SaveUploadedPhotoAsync(Photo, "products");
-
-            var data = new ProductPhoto
             {
-                ProductID = id,
-                Photo = fileName ?? "",
-                Description = Description ?? "",
-                DisplayOrder = DisplayOrder,
-                IsHidden = IsHidden
-            };
-
-            await CatalogDataService.AddPhotoAsync(data);
-            return RedirectToAction("Edit", new { id });
+                await CatalogDataService.DeleteAttributeAsync(attributeId);
+            }
+            return RedirectToAction("Edit", new { id = id });
         }
 
         [HttpGet]
         [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> EditPhoto(int id, long photoId)
+        public async Task<IActionResult> Delete(int id)
         {
-            var photo = await CatalogDataService.GetPhotoAsync(photoId);
-            if (photo == null)
-                return RedirectToAction("Edit", new { id });
-            ViewBag.ProductID = id;
-            return View(photo);
+            var product = await CatalogDataService.GetProductAsync(id);
+            if (product == null) return RedirectToAction("Index");
+            return View(product);
         }
 
         [HttpPost]
         [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> EditPhoto(int id, long photoId, IFormFile? Photo, string? Description, int DisplayOrder, bool IsHidden)
+        public async Task<IActionResult> Delete(int id, string confirm)
         {
-            var existing = await CatalogDataService.GetPhotoAsync(photoId);
-            if (existing == null)
-                return RedirectToAction("Edit", new { id });
-
-            string? fileName = await SaveUploadedPhotoAsync(Photo, "products");
-
-            existing.Photo = fileName ?? existing.Photo;
-            existing.Description = Description ?? "";
-            existing.DisplayOrder = DisplayOrder;
-            existing.IsHidden = IsHidden;
-
-            await CatalogDataService.UpdatePhotoAsync(existing);
-            return RedirectToAction("Edit", new { id });
+            await CatalogDataService.DeleteProductAsync(id);
+            return RedirectToAction("Index");
         }
-
-        [HttpGet]
-        [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> DeletePhoto(int id, long photoId)
-        {
-            var photo = await CatalogDataService.GetPhotoAsync(photoId);
-            if (photo == null)
-                return RedirectToAction("Edit", new { id });
-            ViewBag.ProductID = id;
-            return View(photo);
-        }
-
-        [HttpPost]
-        [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> DeletePhoto(int id, long photoId, string confirm)
-        {
-            if (!string.IsNullOrEmpty(confirm))
-                await CatalogDataService.DeletePhotoAsync(photoId);
-            return RedirectToAction("Edit", new { id });
-        }
-
     }
 }

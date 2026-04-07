@@ -37,7 +37,6 @@
 
     <form method="post" asp-action="Checkout">
         <div class="row g-4">
-            <!-- Delivery Info -->
             <div class="col-lg-7">
                 <div class="checkout-card">
                     <h5 class="fw-bold mb-3"><i class="bi bi-truck me-2"></i>Thông tin giao hàng</h5>
@@ -45,30 +44,34 @@
                         <label class="form-label">Khách hàng</label>
                         <input type="text" class="form-control" value="@customer?.CustomerName" readonly />
                     </div>
+                
                     <div class="mb-3">
                         <label class="form-label">Tỉnh / Thành phố <span class="text-danger">*</span></label>
-                        <select name="deliveryProvince" class="form-select" required>
+                        <select name="deliveryProvince" class="form-select" required
+                                oninvalid="this.setCustomValidity('Vui lòng chọn tỉnh hoặc thành phố giao hàng')"
+                                onchange="this.setCustomValidity('')">
                             <option value="">-- Chọn tỉnh/thành --</option>
                             @foreach (var p in provinces)
                             {
-                                if (p.ProvinceName == customer?.Province)
-                                {
-                                    <option value="@p.ProvinceName" selected>@p.ProvinceName</option>
-                                }
-                                else
-                                {
-                                    <option value="@p.ProvinceName">@p.ProvinceName</option>
-                                }
+                                <option value="@p.ProvinceName" selected="@(p.ProvinceName == customer?.Province)">
+                                    @p.ProvinceName
+                                </option>
                             }
                         </select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Địa chỉ giao hàng <span class="text-danger">*</span></label>
-                        <textarea name="deliveryAddress" class="form-control" rows="2" required>@customer?.Address</textarea>
+                        <textarea name="deliveryAddress" class="form-control" rows="2" required
+                                  oninvalid="this.setCustomValidity('Vui lòng nhập địa chỉ cụ thể để giao hàng')"
+                                  oninput="this.setCustomValidity('')">@customer?.Address</textarea>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
-                        <input type="text" name="deliveryPhone" class="form-control" value="@customer?.Phone" required />
+                        <input type="text" name="deliveryPhone" class="form-control" value="@customer?.Phone" required
+                               oninvalid="this.setCustomValidity('Vui lòng nhập số điện thoại liên lạc')"
+                               oninput="this.setCustomValidity('')" />
                     </div>
                 </div>
             </div>

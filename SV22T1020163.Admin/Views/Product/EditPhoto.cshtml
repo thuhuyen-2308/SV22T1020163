@@ -14,6 +14,7 @@
         Quay lại
     </a>
 }
+
 <div class="row justify-content-center">
     <div class="col-12">
         <div class="card card-outline card-info">
@@ -24,39 +25,38 @@
             <div class="card-body">
                 <form id="formEdit" method="post"
                       asp-action="@(isCreate ? "CreatePhoto" : "EditPhoto")"
-                      asp-route-id="@productId"
-                      asp-route-photoId="@Model.PhotoID"
                       enctype="multipart/form-data">
+
+                    @* 1. CỰC KỲ QUAN TRỌNG: Phải có các trường ẩn này để gửi về Controller *@
+                    <input type="hidden" name="ProductID" value="@Model.ProductID" />
+                    <input type="hidden" name="PhotoID" value="@Model.PhotoID" />
+                    <input type="hidden" name="Photo" value="@Model.Photo" />
+
+                    @* Hiển thị lỗi tổng quát nếu có *@
+                    <div class="text-danger mb-2">
+                        @Html.ValidationSummary(true)
+                    </div>
 
                     <div class="row mb-3 align-items-center">
                         <label class="col-sm-3 fw-semibold">Ảnh</label>
                         <div class="col-sm-9">
+                            @* 2. Tên name="Photo" phải trùng với tham số IFormFile trong Controller *@
                             <input type="file"
                                    name="Photo"
                                    class="form-control"
                                    accept="image/*"
-                                   data-img-preview="imgPreview"
-                                   onchange="previewImage(this)" />
+                                   onchange="document.getElementById('imgPreview').src = window.URL.createObjectURL(this.files[0])" />
+                            @Html.ValidationMessage("Photo", new { @class = "text-danger" })
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <label class="col-sm-3 fw-semibold">Xem trước</label>
                         <div class="col-sm-9">
-                            @if (!string.IsNullOrEmpty(Model.Photo))
-                            {
-                                <img id="imgPreview"
-                                     src="~/anh_chung/products/@Model.Photo"
-                                     class="img-thumbnail"
-                                     style="max-height:200px;" />
-                            }
-                            else
-                            {
-                                <img id="imgPreview"
-                                     src="~/anh_chung/products/nophoto.png"
-                                     class="img-thumbnail"
-                                     style="max-height:200px;" />
-                            }
+                            <img id="imgPreview"
+                                 src="~/anh_chung/products/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)"
+                                 class="img-thumbnail"
+                                 style="max-height:200px;" />
                         </div>
                     </div>
 
@@ -66,6 +66,8 @@
                             <input type="text" name="Description"
                                    value="@Model.Description"
                                    class="form-control" />
+                            @* 3. HIỂN THỊ LỖI: Để tránh sập trang khi để trống mô tả *@
+                            @Html.ValidationMessage("Description", new { @class = "text-danger" })
                         </div>
                     </div>
 
@@ -89,7 +91,7 @@
                                        name="IsHidden"
                                        id="IsHidden"
                                        value="true"
-                                       @(Model.IsHidden ? "checked" : "") />
+                                @(Model.IsHidden ? "checked" : "") />
                                 <label class="form-check-label" for="IsHidden">
                                     Ẩn ảnh
                                 </label>

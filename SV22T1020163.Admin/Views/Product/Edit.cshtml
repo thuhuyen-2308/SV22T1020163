@@ -33,7 +33,14 @@
                       asp-action="@(isCreate ? "Create" : "Edit")"
                       enctype="multipart/form-data">
 
+                    @* QUAN TRỌNG: Giữ ID và tên ảnh cũ *@
                     <input type="hidden" name="ProductID" value="@Model.ProductID" />
+                    <input type="hidden" name="Photo" value="@Model.Photo" />
+
+                    @* Hiển thị lỗi tổng quát *@
+                    <div class="text-danger mb-2">
+                        @Html.ValidationSummary(true)
+                    </div>
 
                     <div class="row mb-3">
                         <label class="col-sm-3 col-form-label">Tên mặt hàng</label>
@@ -43,6 +50,7 @@
                                    class="form-control"
                                    value="@Model.ProductName"
                                    placeholder="Nhập tên mặt hàng" autofocus />
+                            @Html.ValidationMessage("ProductName", new { @class = "text-danger" })
                         </div>
                     </div>
 
@@ -50,7 +58,7 @@
                         <label class="col-sm-3 col-form-label">Loại hàng</label>
                         <div class="col-sm-3">
                             <select name="CategoryID" class="form-select">
-                                <option value="">-- Chọn loại hàng --</option>
+                                <option value="0">-- Chọn loại hàng --</option>
                                 @if (categories != null)
                                 {
                                     foreach (var c in categories.DataItems)
@@ -62,12 +70,13 @@
                                     }
                                 }
                             </select>
+                            @Html.ValidationMessage("CategoryID", new { @class = "text-danger" })
                         </div>
 
                         <label class="col-sm-2 col-form-label text-end">Nhà cung cấp</label>
                         <div class="col-sm-4">
                             <select name="SupplierID" class="form-select">
-                                <option value="">-- Chọn nhà cung cấp --</option>
+                                <option value="0">-- Chọn nhà cung cấp --</option>
                                 @if (suppliers != null)
                                 {
                                     foreach (var s in suppliers.DataItems)
@@ -79,6 +88,7 @@
                                     }
                                 }
                             </select>
+                            @Html.ValidationMessage("SupplierID", new { @class = "text-danger" })
                         </div>
                     </div>
 
@@ -90,6 +100,7 @@
                                    class="form-control"
                                    value="@Model.Unit"
                                    placeholder="cái, hộp, kg..." />
+                            @Html.ValidationMessage("Unit", new { @class = "text-danger" })
                         </div>
 
                         <label class="col-sm-2 col-form-label text-end">Giá</label>
@@ -99,6 +110,7 @@
                                    class="form-control money-input"
                                    value="@Model.Price.ToString("0")"
                                    placeholder="Giá bán" />
+                            @Html.ValidationMessage("Price", new { @class = "text-danger" })
                         </div>
                     </div>
 
@@ -111,7 +123,7 @@
                                        name="IsSelling"
                                        id="IsSelling"
                                        value="true"
-                                       @(Model.IsSelling ? "checked" : "") />
+                                @(Model.IsSelling ? "checked" : "") />
                                 <label class="form-check-label" for="IsSelling">
                                     Đang bán
                                 </label>
@@ -126,8 +138,7 @@
                                    name="uploadPhoto"
                                    class="form-control"
                                    accept="image/*"
-                                   data-img-preview="imgPreview"
-                                   onchange="previewImage(this)" />
+                                   onchange="document.getElementById('imgPreview').src = window.URL.createObjectURL(this.files[0])" />
                             <div class="mt-2">
                                 @if (!string.IsNullOrEmpty(Model.Photo))
                                 {
@@ -165,6 +176,7 @@
 
 @if (!isCreate)
 {
+    // Đảm bảo ép kiểu đúng để tránh lỗi lúc render
     await Html.RenderPartialAsync("ListPhotos", ViewBag.Photos as List<SV22T1020163.Models.Catalog.ProductPhoto>);
     await Html.RenderPartialAsync("ListAttributes", ViewBag.Attributes as List<SV22T1020163.Models.Catalog.ProductAttribute>);
 }

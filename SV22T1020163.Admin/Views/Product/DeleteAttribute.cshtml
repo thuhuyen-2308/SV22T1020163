@@ -29,14 +29,29 @@
                 </div>
 
                 <table class="table table-bordered">
-                    <tr>
-                        <th style="width: 200px;">Tên thuộc tính:</th>
-                        <td>@Model.AttributeName</td>
-                    </tr>
-                    <tr>
-                        <th>Giá trị:</th>
-                        <td>@Model.AttributeValue</td>
-                    </tr>
+                    <div class="row mb-3">
+                        <label class="col-sm-3 fw-semibold">Tên thuộc tính</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="AttributeName"
+                                   value="@Model.AttributeName"
+                                   class="form-control"
+                                   required
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập tên thuộc tính')"
+                                   oninput="this.setCustomValidity('')" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 fw-semibold">Giá trị thuộc tính</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="AttributeValue"
+                                   value="@Model.AttributeValue"
+                                   class="form-control"
+                                   required
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập giá trị thuộc tính')"
+                                   oninput="this.setCustomValidity('')" />
+                        </div>
+                    </div>
                     <tr>
                         <th>Thứ tự hiển thị:</th>
                         <td>@Model.DisplayOrder</td>

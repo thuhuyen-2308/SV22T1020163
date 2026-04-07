@@ -43,7 +43,9 @@
                                    class="form-control"
                                    value="@Model.AttributeName"
                                    placeholder="Ví dụ: Màu sắc, Kích thước"
-                                   required autofocus />
+                                   required autofocus
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập tên thuộc tính')"
+                                   oninput="this.setCustomValidity('')" />
                         </div>
                     </div>
 
@@ -57,7 +59,9 @@
                                    class="form-control"
                                    value="@Model.AttributeValue"
                                    placeholder="Ví dụ: Đỏ, XL, 500g"
-                                   required />
+                                   required
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập giá trị thuộc tính')"
+                                   oninput="this.setCustomValidity('')" />
                         </div>
                     </div>
 

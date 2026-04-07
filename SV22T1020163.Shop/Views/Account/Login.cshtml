@@ -22,20 +22,29 @@
 
             <form method="post" asp-action="Login" class="mt-3">
                 <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+    
                 <div class="mb-3">
                     <label class="form-label" for="login-email">Email</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                        <input id="login-email" type="email" name="email" class="form-control" placeholder="Nhập email" required autofocus autocomplete="email" />
+                        <input id="login-email" type="email" name="email" class="form-control"
+                               placeholder="Nhập email" required autofocus autocomplete="email"
+                               oninvalid="this.setCustomValidity('Vui lòng nhập địa chỉ Email của bạn')"
+                               oninput="this.setCustomValidity('')" />
                     </div>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label" for="login-password">Mật khẩu</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input id="login-password" type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required autocomplete="current-password" />
+                        <input id="login-password" type="password" name="password" class="form-control"
+                               placeholder="Nhập mật khẩu" required autocomplete="current-password"
+                               oninvalid="this.setCustomValidity('Vui lòng nhập mật khẩu')"
+                               oninput="this.setCustomValidity('')" />
                     </div>
                 </div>
+    
                 <button type="submit" class="btn btn-primary w-100 mt-1 py-2">Đăng nhập</button>
             </form>
 

@@ -12,7 +12,10 @@
         <div class="row">
             <div class="col-12">
                 <label class="form-label">Người giao hàng</label>
-                <select name="shipperID" class="form-select" required>
+                <select name="shipperID" class="form-select" required
+                        oninvalid="this.setCustomValidity('Vui lòng chọn người giao hàng trong danh sách')"
+                        onchange="this.setCustomValidity('')">
+        
                     <option value="">-- Chọn người giao hàng --</option>
                     @if (shippers != null)
                     {

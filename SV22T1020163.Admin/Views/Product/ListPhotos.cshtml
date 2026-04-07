@@ -1,11 +1,7 @@
 @model List<SV22T1020163.Models.Catalog.ProductPhoto>
 @{
     Layout = null;
-    int productId = 0;
-    if (Model != null && Model.Count > 0)
-        productId = Model[0].ProductID;
-    else if (ViewBag.ProductID != null)
-        productId = (int)ViewBag.ProductID;
+    int productId = ViewBag.ProductID;
 }
 <div class="row justify-content-center">
     <div class="col-12">
