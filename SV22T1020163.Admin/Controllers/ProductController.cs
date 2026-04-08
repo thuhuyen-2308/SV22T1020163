@@ -217,10 +217,10 @@ namespace SV22T1020163.Admin.Controllers
         // Đảm bảo dùng [HttpPost] vì Form của bạn gửi Post
         [HttpPost]
         [Authorize(Roles = AppRoles.AdminManager)]
+        
         public async Task<IActionResult> DeleteAttribute(int id, long attributeId, string confirm = "")
         {
-            // Chỉ thực hiện xóa nếu người dùng đã xác nhận (confirm có giá trị)
-            if (!string.IsNullOrEmpty(confirm))
+            if (confirm == "yes")
             {
                 await CatalogDataService.DeleteAttributeAsync(attributeId);
             }
@@ -236,11 +236,20 @@ namespace SV22T1020163.Admin.Controllers
             return View(product);
         }
 
+        
         [HttpPost]
-        [Authorize(Roles = AppRoles.AdminManager)]
-        public async Task<IActionResult> Delete(int id, string confirm)
+        public async Task<IActionResult> Delete(int id, string confirm = "")
         {
-            await CatalogDataService.DeleteProductAsync(id);
+            if (confirm == "yes")
+            {
+                bool result = await CatalogDataService.DeleteProductAsync(id);
+                if (!result)
+                {
+                    ViewBag.IsUsed = true; // Báo cho View biết là mặt hàng đang được sử dụng, không xóa được
+                    var data = await CatalogDataService.GetProductAsync(id);
+                    return View(data);
+                }
+            }
             return RedirectToAction("Index");
         }
     }
