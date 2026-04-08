@@ -168,26 +168,20 @@ namespace SV22T1020163.Shop.Controllers
         {
             return View();
         }
-
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> ChangePassword(string oldPassword, string newPassword, string confirmPassword)
         {
-            if (string.IsNullOrWhiteSpace(oldPassword) || string.IsNullOrWhiteSpace(newPassword))
-            {
-                ViewBag.Error = "Vui lòng nhập đầy đủ thông tin.";
-                return View();
-            }
-            if (newPassword.Length < 6)
-            {
-                ViewBag.Error = "Mật khẩu mới phải có ít nhất 6 ký tự.";
-                return View();
-            }
+            // Kiểm tra và dùng ModelState để hiện chữ đỏ dưới từng ô
+            if (string.IsNullOrWhiteSpace(oldPassword))
+                ModelState.AddModelError("oldPassword", "Vui lòng nhập mật khẩu cũ.");
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+                ModelState.AddModelError("newPassword", "Mật khẩu mới phải từ 6 ký tự.");
             if (newPassword != confirmPassword)
-            {
-                ViewBag.Error = "Mật khẩu xác nhận không khớp.";
+                ModelState.AddModelError("confirmPassword", "Mật khẩu xác nhận không khớp.");
+
+            if (!ModelState.IsValid)
                 return View();
-            }
 
             int customerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
             string email = User.FindFirstValue(ClaimTypes.Email) ?? "";
@@ -195,7 +189,8 @@ namespace SV22T1020163.Shop.Controllers
             var check = await PartnerDataService.AuthorizeCustomerAsync(email, oldPassword);
             if (check == null)
             {
-                ViewBag.Error = "Mật khẩu cũ không đúng.";
+                // Lỗi này không thuộc ô nào cụ thể thì dùng ViewBag.Error là đúng
+                ViewBag.Error = "Mật khẩu cũ không chính xác.";
                 return View();
             }
 
