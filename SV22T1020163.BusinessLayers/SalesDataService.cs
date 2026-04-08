@@ -35,9 +35,13 @@ namespace SV22T1020163.BusinessLayers
         /// </summary>
         public static async Task<int> AddOrderAsync(Order data)
         {
-            data.Status = OrderStatusEnum.New;
-            data.OrderTime = DateTime.Now;
+            
+            if (data.OrderTime == DateTime.MinValue)
+                data.OrderTime = DateTime.Now;
 
+            data.Status = OrderStatusEnum.New;
+
+            
             return await orderDB.AddAsync(data);
         }
 

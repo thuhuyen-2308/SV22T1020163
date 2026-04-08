@@ -30,7 +30,7 @@ namespace SV22T1020163.Shop.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Checkout(string deliveryProvince, string deliveryAddress)
+        public async Task<IActionResult> Checkout(string deliveryProvince, string deliveryAddress, string deliveryPhone)
         {
             var cart = ApplicationContext.GetSessionData<List<CartItem>>("Cart") ?? new List<CartItem>();
             if (cart.Count == 0)
@@ -39,19 +39,33 @@ namespace SV22T1020163.Shop.Controllers
                 return RedirectToAction("Index", "Cart");
             }
 
-            if (string.IsNullOrWhiteSpace(deliveryProvince) || string.IsNullOrWhiteSpace(deliveryAddress))
-            {
-                TempData["Error"] = "Vui lòng nhập đầy đủ thông tin giao hàng.";
-                return RedirectToAction("Checkout");
-            }
+            // Kiểm tra Server-side để hiện chữ đỏ dưới từng ô ở View
+            if (string.IsNullOrWhiteSpace(deliveryProvince))
+                ModelState.AddModelError("deliveryProvince", "Vui lòng chọn Tỉnh/Thành.");
+            if (string.IsNullOrWhiteSpace(deliveryAddress))
+                ModelState.AddModelError("deliveryAddress", "Vui lòng nhập địa chỉ giao hàng.");
+            if (string.IsNullOrWhiteSpace(deliveryPhone))
+                ModelState.AddModelError("deliveryPhone", "Vui lòng nhập số điện thoại.");
 
-            int customerId = GetCustomerId();
+            if (!ModelState.IsValid)
+            {
+                // Trả về View thay vì Redirect để giữ lại dữ liệu khách đã gõ
+                var customer = await PartnerDataService.GetCustomerAsync(GetCustomerId());
+                ViewBag.Customer = customer;
+                ViewBag.Cart = cart;
+                ViewBag.CartTotal = cart.Sum(c => c.TotalPrice);
+                ViewBag.Provinces = await DictionaryDataService.ListProvincesAsync();
+                return View();
+            }
 
             var order = new Order
             {
-                CustomerID = customerId,
+                CustomerID = GetCustomerId(),
+                OrderTime = DateTime.Now, // Nên gán thời gian hiện tại
                 DeliveryProvince = deliveryProvince,
-                DeliveryAddress = deliveryAddress
+                DeliveryAddress = deliveryAddress,
+                DeliveryPhone = deliveryPhone, // Phải có dòng này để lưu số điện thoại
+                Status = OrderStatusEnum.New
             };
 
             int orderId = await SalesDataService.AddOrderAsync(order);
@@ -68,14 +82,13 @@ namespace SV22T1020163.Shop.Controllers
                         SalePrice = item.Price
                     });
                 }
-
                 ApplicationContext.SetSessionData("Cart", new List<CartItem>());
                 TempData["Success"] = "Đặt hàng thành công!";
                 return RedirectToAction("Detail", new { id = orderId });
             }
 
             TempData["Error"] = "Đã có lỗi xảy ra, vui lòng thử lại.";
-            return RedirectToAction("Checkout");
+            return View();
         }
 
         public async Task<IActionResult> History(int status = 0, int page = 1)

@@ -20,9 +20,12 @@ namespace SV22T1020163.DataLayers.SQLServer
         {
             using (var connection = GetConnection())
             {
-                var sql = @"INSERT INTO Orders(CustomerID, OrderTime, DeliveryProvince, DeliveryAddress, EmployeeID, Status)
-                            VALUES(@CustomerID, @OrderTime, @DeliveryProvince, @DeliveryAddress, @EmployeeID, @Status);
-                            SELECT SCOPE_IDENTITY();";
+                
+                var sql = @"INSERT INTO Orders(CustomerID, OrderTime, DeliveryProvince, DeliveryAddress, DeliveryPhone, EmployeeID, Status)
+                    VALUES(@CustomerID, @OrderTime, @DeliveryProvince, @DeliveryAddress, @DeliveryPhone, @EmployeeID, @Status);
+                    SELECT SCOPE_IDENTITY();";
+
+                
                 var id = await connection.ExecuteScalarAsync<int>(sql, data);
                 return id;
             }
@@ -160,6 +163,7 @@ namespace SV22T1020163.DataLayers.SQLServer
                             SET CustomerID = @CustomerID,
                                 DeliveryProvince = @DeliveryProvince,
                                 DeliveryAddress = @DeliveryAddress,
+                                DeliveryPhone = @DeliveryPhone,
                                 EmployeeID = @EmployeeID,
                                 AcceptTime = @AcceptTime,
                                 ShipperID = @ShipperID,

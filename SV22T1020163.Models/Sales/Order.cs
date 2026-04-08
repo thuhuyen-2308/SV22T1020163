@@ -25,6 +25,8 @@ namespace SV22T1020163.Models.Sales
         /// Địa chỉ giao hàng
         /// </summary>
         public string? DeliveryAddress { get; set; }
+
+        public string DeliveryPhone { get; set; } = string.Empty;
         /// <summary>
         /// Mã nhân viên xử lý đơn hàng (người nhận/duyệt đơn hàng)
         /// </summary>
